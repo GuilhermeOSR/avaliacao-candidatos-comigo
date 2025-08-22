@@ -1,6 +1,7 @@
-// components/TableList.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import {useAuth} from "../hooks/useAuth";
+
 
 type Ticket = {
   id: number;
@@ -14,44 +15,69 @@ type Ticket = {
   status: string;
 };
 
-const mockData: Ticket[] = [
-  {
-    id: 110,
-    tipo: "Suporte",
-    motivo: "Incidente",
-    descricao: "Veículos sem comunicação",
-    cliente: "Cliente 1",
-    veiculo: "Veículo 2, Veículo 6",
-    dataAbertura: "02/07/2023",
-    prazo: "05/07/2023",
-    status: "À fazer",
-  },
-  {
-    id: 111,
-    tipo: "Vendas",
-    motivo: "Upgrade",
-    descricao: "Upgrade veículo 2",
-    cliente: "Cliente 2",
-    veiculo: "Veículo 2",
-    dataAbertura: "01/07/2023",
-    prazo: "05/07/2023",
-    status: "Em andamento",
-  },
-  {
-    id: 112,
-    tipo: "Operacional",
-    motivo: "Teste de rastreador",
-    descricao: "Testes de instalação - OS 002",
-    cliente: "Cliente 1",
-    veiculo: "Veículo 3",
-    dataAbertura: "01/07/2023",
-    prazo: "05/07/2023",
-    status: "Concluído",
-  },
-];
+type TableListProps = {
+  setTicketToEdit: (t: Ticket | null) => void;
+  tickets: Ticket[];
+  setPage: React.Dispatch<React.SetStateAction<number>>;
+  page: number;
+  totalPages: number;
+  setCurrentStep: (step: number) => void;
+};
 
-const TableList = () => {
-  const [tickets] = useState<Ticket[]>(mockData);
+
+const TableList = ({setTicketToEdit, setCurrentStep}: TableListProps) => {
+  const {usuario} = useAuth();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5); 
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchTickets = async (page: number) => {
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `http://localhost:3333/api/tickets?page=${page}&limit=${limit}`
+      );
+      const data = await res.json();
+
+      setTickets(data.tickets);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
+      setPage(data.page);
+    } catch (error) {
+      console.error("Erro ao buscar tickets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteTicket = async (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir este ticket?")) return;
+
+    try {
+      const token = localStorage.getItem("token")
+      await fetch(`http://localhost:3333/api/tickets/${id}`, {
+        method: "DELETE",
+        headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // <-- manda o token
+      },
+      });
+
+      // Recarrega a lista após excluir
+      fetchTickets(page);
+    } catch (error) {
+      console.error("Erro ao deletar ticket:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets(page);
+  }, [page]);
+
+  if (loading) return <p>Carregando tickets...</p>;
 
   return (
     <div className="overflow-x-auto rounded-md ">
@@ -80,18 +106,30 @@ const TableList = () => {
               <td className="px-4 py-2">{t.tipo}</td>
               <td className="px-4 py-2">{t.motivo}</td>
               <td className="px-4 py-2">{t.descricao}</td>
-              <td className="px-4 py-2">{t.cliente}</td>
+              <td className="px-4 py-2">Cliente {t.id}</td>
               <td className="px-4 py-2">{t.veiculo}</td>
-              <td className="px-4 py-2">{t.dataAbertura}</td>
-              <td className="px-4 py-2">{t.prazo}</td>
+              <td className="px-4 py-2">
+                {new Date(t.dataAbertura).toLocaleDateString("pt-BR")}
+              </td>
+              <td className="px-4 py-2">
+                {new Date(t.prazo).toLocaleDateString("pt-BR")}
+              </td>
               <td className="px-4 py-2 ">{t.status}</td>
               <td className="px-4 py-2 gap-2 rounded-r-[6px] text-center">
-                <button className="actionButtons text-blue-600 hover:text-blue-800">
+                <button className="actionButtons text-blue-600 hover:text-blue-800"
+                onClick={() => {
+                  setTicketToEdit(t); // passa ticket selecionado
+                  setCurrentStep(0);  // abre formulário na etapa inicial
+                }}
+                >
                   <Pencil size={18} />
                 </button>
-                <button className="actionButtons text-red-600 hover:text-red-800">
+                {usuario?.cargo !== "ATENDENTE" && (
+                <button className="actionButtons text-red-600 hover:text-red-800"
+                onClick={() => deleteTicket(t.id)}>
                   <Trash2 size={18} />
                 </button>
+                )}
               </td>
             </tr>
           ))}
@@ -99,19 +137,43 @@ const TableList = () => {
       </table>
 
       {/* Footer com paginação */}
-     <div className="relative flex justify-center items-center py-3 text-sm text-gray-500">
-
+      <div className="relative flex justify-center items-center py-3 text-sm text-gray-500">
         <div className="absolute left-0 flex items-center gap-2">
-            {/*Só aparece se tiver páginas anteriores*/}
-            {/* <button className="actionButtons px-2 py-1 rounded text-black hover:bg-gray-200">&lt;</button> */}
-            <button className="px-3 py-1 rounded text-white bg-[#1169B0]">1</button>
-            <button className="actionButtons px-2 py-1 rounded text-[#1169B0] hover:text-black">2</button>
-            <button className="actionButtons px-2 py-1 rounded text-black">&gt;</button>
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="actionButtons px-2 py-1 rounded text-black disabled:opacity-40"
+          >
+            &lt;
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setPage(i + 1)}
+              className={`px-3 py-1 rounded ${
+                page === i + 1
+                  ? "text-white"
+                  : "actionButtons text-[#1169B0] hover:text-black"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="actionButtons px-2 py-1 rounded text-black disabled:opacity-40"
+          >
+            &gt;
+          </button>
         </div>
 
-
-        <span>Exibindo {tickets.length} de {tickets.length} do total de {tickets.length}  registros</span>
-    </div>
+        <span>
+          Exibindo {tickets.length} de {total} registros
+        </span>
+      </div>
     </div>
   );
 };

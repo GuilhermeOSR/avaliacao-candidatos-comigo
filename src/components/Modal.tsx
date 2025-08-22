@@ -5,9 +5,13 @@ import CloseIcon from '../assets/icons/CloseIcon.png';
 
 type ModalProps = {
   onClose: () => void;
+  ticketToEdit: any; 
+  setTicketToEdit: (ticket: any) => void;
+  fetchTickets: (page: number) => void;
+  page: number;
 };
 
-const Modal = ({onClose}: ModalProps) => {
+const Modal = ({onClose, ticketToEdit, fetchTickets, page}: ModalProps) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
 
@@ -43,13 +47,24 @@ const Modal = ({onClose}: ModalProps) => {
         >
 
 
-        <h3 className="text-black text-xs font-regular mb-2 mt-2">Formulário de Cadastro</h3>
-        <h2 className="text-black text-lg font-medium mb-12 ">Novo atendimento ao cliente</h2>
+        <h3 className="text-black text-xs font-regular mb-2 mt-2">
+          {ticketToEdit ? "Formulário de Edição" : "Formulário de Cadastro"}
+        </h3>
+
+        <h2 className="text-black text-lg font-medium mb-12">
+          {ticketToEdit
+            ? `Ticket #${ticketToEdit.id}`
+            : "Novo atendimento ao cliente"}
+        </h2>
 
             
         <Stepper steps={["CONTATO", "TICKET", "MOTIVO", ]} currentStep={currentStep} />
         {/* Formulário dinâmico */}
-        <FormField currentStep={currentStep} setCurrentStep={setCurrentStep} />
+        <FormField currentStep={currentStep} setCurrentStep={setCurrentStep} 
+        ticketToEdit={ticketToEdit}
+        
+        onSuccess={() => fetchTickets(page)}
+        />
 
         
         </div>

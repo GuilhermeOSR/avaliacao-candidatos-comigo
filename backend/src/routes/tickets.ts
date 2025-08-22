@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
+import { authMiddleware } from "../middlewares/authMiddleware";
+import { roleMiddleware } from "../middlewares/roleMiddleware";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -27,20 +29,41 @@ let clienteCounter = 1;
  *         description: Erro ao buscar tickets
  */
 
+
 router.get("/", async (req, res) => {
   try {
-    const tickets = await prisma.ticket.findMany({
-      include: {
-        usuario: true, 
-      },
-    });
+    // page e limit vindos da query, se não vierem usa valores padrão
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
-    return res.status(200).json(tickets);
+    // busca tickets com paginação
+    const [tickets, total] = await Promise.all([
+      prisma.ticket.findMany({
+        skip,
+        take: limit,
+        include: {
+          usuario: true,
+        },
+        orderBy: { id: "asc" }, // opcional, só pra organizar
+      }),
+      prisma.ticket.count(),
+    ]);
+
+    return res.status(200).json({
+      tickets,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erro ao buscar tickets" });
   }
 });
+
+router.use(authMiddleware); 
+// todas as rotas exigem estar logado
 
 /**
  * @swagger
@@ -110,7 +133,10 @@ router.post("/", async (req, res) => {
 
     const dataAbertura = new Date();
 
-    // salva no banco
+    // adiciona 3 dias
+    const prazo = new Date(dataAbertura);
+    prazo.setDate(prazo.getDate() + 3);
+
     const ticket = await prisma.ticket.create({
       data: {
         cliente: `Cliente ${clienteCounter++}`,
@@ -121,6 +147,7 @@ router.post("/", async (req, res) => {
         descricao,
         veiculo,
         dataAbertura,
+        prazo, 
         status: "A fazer",
       },
     });
@@ -248,7 +275,7 @@ router.put("/:id", async (req, res) => {
  *       404:
  *         description: Ticket não encontrado
  */
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", roleMiddleware(["ADMIN"]), async (req, res) => {
   try {
     const { id } = req.params;
 

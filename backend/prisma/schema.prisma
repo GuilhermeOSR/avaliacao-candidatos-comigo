@@ -13,6 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Ticket {
   id             Int           @id @default(autoincrement())
   contatoPassivo Boolean       @default(false)   
@@ -23,6 +24,7 @@ model Ticket {
   cliente        String
   veiculo        String
   dataAbertura   DateTime
+  prazo          DateTime?
   status         String        @default("A fazer")
   usuarioId   Int?
   usuario     Usuario? @relation(fields: [usuarioId], references: [id])

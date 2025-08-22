@@ -8,8 +8,27 @@ const options: Options = {
     info: {
       title: "API de Tickets",
       version: "1.0.0",
-      description: "Documentação da API de Tickets com Swagger",
+      description: "Documentação da API com Swagger",
     },
+    servers: [
+      {
+        url: "http://localhost:3333/", // ajuste se sua API rodar em outra porta
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
   apis: ["./src/routes/*.ts"], 
 };

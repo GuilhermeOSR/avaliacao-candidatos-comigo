@@ -3,29 +3,35 @@ import ArrowRight from '../assets/icons/arrowRight.png';
 import ArrowLeft from '../assets/icons/arrowLeft.png';
 import SearchIcon from '../assets/icons/Search.png';
 
+type Ticket = {
+  id?: number; 
+  contatoPassivo: boolean;
+  tipoContato?: string | null;
+  tipo: string;
+  motivo: string;
+  descricao: string;
+  veiculo: string;
+};
 
 type FormFieldProps = {
   currentStep: number;
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
+  ticketToEdit?: Ticket | null;
+  onSuccess?: () => void;
 };
 
-const FormField = ({ currentStep, setCurrentStep }: FormFieldProps) => {
-    {/* Contato */}
-    const [contato, setContato] = useState<"sim" | "nao" | "">("");
-    const [tipoContato, setTipoContato] = useState("");
-    {/* Ticket */}
-    const [ticket, setTicket] = useState<
-    "operacional" | "suporte" | "relacionamento" | "vendas" | ""
-    >("");
-    {/* Reason */}
-    const [ticketReason, setTicketReason] = useState<
-    "motivo1" | "motivo2" | "motivo3" | ""
-    >("");
+const FormField = ({ currentStep, setCurrentStep, ticketToEdit}: FormFieldProps) => {
+ 
+  const [contato, setContato] = useState<"sim" | "nao" | "">(
+    ticketToEdit ? (ticketToEdit.contatoPassivo ? "sim" : "nao") : ""
+  );
+  const [tipoContato, setTipoContato] = useState(ticketToEdit?.tipoContato || "");
+  const [ticket, setTicket] = useState(ticketToEdit?.tipo || "");
+  const [ticketReason, setTicketReason] = useState(ticketToEdit?.motivo || "");
+  const [descricao, setDescricao] = useState(ticketToEdit?.descricao || "");
+  const [veiculo, setVeiculo] = useState(ticketToEdit?.veiculo || "");
 
-    const [descricao, setDescricao] = useState("");
-    const [veiculo, setVeiculo] = useState("");
-
-     // Função de submit
+  // Função de submit
   const handleSubmit = async () => {
     const payload = {
       contatoPassivo: contato === "sim",
@@ -37,16 +43,35 @@ const FormField = ({ currentStep, setCurrentStep }: FormFieldProps) => {
     };
 
     try {
-      const response = await fetch("http://localhost:3333/api/tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let response;
+      if (ticketToEdit) {
+        // PUT (edição)
+        const token = localStorage.getItem("token");
+        response = await fetch(`http://localhost:3333/api/tickets/${ticketToEdit.id}`, {
+          method: "PUT",
+          headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, 
+        },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // POST (criação)
+        const token = localStorage.getItem("token");
+        response = await fetch("http://localhost:3333/api/tickets", {
+          method: "POST",
+          headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, 
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       const data = await response.json();
       if (response.ok) {
-        alert("✅ Ticket criado com sucesso!");
-        console.log(data);
+        alert(ticketToEdit ? "✅ Ticket atualizado com sucesso!" : "✅ Ticket criado com sucesso!");
+        window.location.reload();
       } else {
         alert("❌ Erro: " + (data.error || JSON.stringify(data.erros)));
       }
@@ -558,7 +583,7 @@ const FormField = ({ currentStep, setCurrentStep }: FormFieldProps) => {
       type="button"
       onClick={handleSubmit}
       >
-        Cadastrar   <span className="ml-1">✔</span>
+        {ticketToEdit ? "Salvar Alterações" : "Cadastrar "} <span className="ml-1">✔</span>
       </button>
     </div>
   </div>

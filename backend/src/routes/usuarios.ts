@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { authMiddleware } from "../middlewares/authMiddleware";
+import { roleMiddleware } from "../middlewares/roleMiddleware";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -10,6 +13,44 @@ const prisma = new PrismaClient();
  * tags:
  *   name: Usuários
  *   description: Gestão de usuários do sistema
+ */
+
+
+
+
+/**
+ * @swagger
+ * /api/usuarios/login:
+ *   post:
+ *     summary: Faz login de usuário e retorna um JWT
+ *     tags: [Usuários]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - email
+ *               - password
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token de autenticação
+ *       401:
+ *         description: Credenciais inválidas
  */
 
 /**
@@ -46,6 +87,69 @@ const prisma = new PrismaClient();
  *       400:
  *         description: Erros de validação
  */
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const usuario = await prisma.usuario.findUnique({ where: { email } });
+    if (!usuario) {
+      return res.status(401).json({ error: "Credenciais inválidas" });
+    }
+
+    const senhaCorreta = await bcrypt.compare(password, usuario.password);
+    if (!senhaCorreta) {
+      return res.status(401).json({ error: "Credenciais inválidas" });
+    }
+
+    const token = jwt.sign(
+      { id: usuario.id, cargo: usuario.cargo },
+      process.env.JWT_SECRET || "segredo_super_secreto",
+      { expiresIn: "1h" }
+    );
+
+    return res.json({
+    token,
+    usuario: {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      cargo: usuario.cargo
+    }
+  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro no login" });
+  }
+});
+
+
+/**
+ * @swagger
+ * /api/usuarios:
+ *   get:
+ *     summary: Lista todos os usuários
+ *     tags: [Usuários]
+ *     responses:
+ *       200:
+ *         description: Lista de usuários
+ */
+router.get("/", async (req, res) => {
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      select: { id: true, nome: true, email: true, login: true, cargo: true },
+    });
+    return res.status(200).json(usuarios);
+  } catch (err) {
+    return res.status(500).json({ error: "Erro ao listar usuários" });
+  }
+});
+
+
+router.use(authMiddleware);
+router.use(roleMiddleware(["ADMIN"]));
+
+
 router.post("/", async (req, res) => {
   try {
     const { nome, email, login, password, cargo } = req.body;
@@ -101,26 +205,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /api/usuarios:
- *   get:
- *     summary: Lista todos os usuários
- *     tags: [Usuários]
- *     responses:
- *       200:
- *         description: Lista de usuários
- */
-router.get("/", async (req, res) => {
-  try {
-    const usuarios = await prisma.usuario.findMany({
-      select: { id: true, nome: true, email: true, login: true, cargo: true },
-    });
-    return res.status(200).json(usuarios);
-  } catch (err) {
-    return res.status(500).json({ error: "Erro ao listar usuários" });
-  }
-});
 
 /**
  * @swagger
@@ -158,9 +242,9 @@ router.get("/:id", async (req, res) => {
 
 /**
  * @swagger
- * /api/usuarios/{id}:
+ * /api/usuarios/{id}/cargo:
  *   put:
- *     summary: Atualiza usuário por ID
+ *     summary: Atualiza apenas o cargo do usuário
  *     tags: [Usuários]
  *     parameters:
  *       - in: path
@@ -175,21 +259,18 @@ router.get("/:id", async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               nome:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
  *               cargo:
  *                 type: string
- *                 enum: [Admin, Atendente]
+ *                 enum: [Admin, Gerente, Operador]
  *     responses:
  *       200:
- *         description: Usuário atualizado
+ *         description: Cargo atualizado com sucesso
+ *       400:
+ *         description: Cargo inválido ou ausente
  *       404:
  *         description: Usuário não encontrado
  */
+// Atualizar apenas o cargo
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,6 +319,7 @@ router.put("/:id", async (req, res) => {
  *       404:
  *         description: Usuário não encontrado
  */
+
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -254,5 +336,9 @@ router.delete("/:id", async (req, res) => {
     return res.status(500).json({ error: "Erro ao remover usuário" });
   }
 });
+
+
+
+
 
 export default router;
