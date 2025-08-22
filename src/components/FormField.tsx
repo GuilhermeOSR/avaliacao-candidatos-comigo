@@ -9,9 +9,10 @@ type FormFieldProps = {
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
 };
 
-const FormField = ({ currentStep }: FormFieldProps) => {
+const FormField = ({ currentStep, setCurrentStep }: FormFieldProps) => {
     {/* Contato */}
     const [contato, setContato] = useState<"sim" | "nao" | "">("");
+    const [tipoContato, setTipoContato] = useState("");
     {/* Ticket */}
     const [ticket, setTicket] = useState<
     "operacional" | "suporte" | "relacionamento" | "vendas" | ""
@@ -20,6 +21,40 @@ const FormField = ({ currentStep }: FormFieldProps) => {
     const [ticketReason, setTicketReason] = useState<
     "motivo1" | "motivo2" | "motivo3" | ""
     >("");
+
+    const [descricao, setDescricao] = useState("");
+    const [veiculo, setVeiculo] = useState("");
+
+     // Função de submit
+  const handleSubmit = async () => {
+    const payload = {
+      contatoPassivo: contato === "sim",
+      tipoContato: contato === "sim" ? tipoContato : null,
+      tipo: ticket,
+      motivo: ticketReason,
+      descricao,
+      veiculo,
+    };
+
+    try {
+      const response = await fetch("http://localhost:3333/api/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("✅ Ticket criado com sucesso!");
+        console.log(data);
+      } else {
+        alert("❌ Erro: " + (data.error || JSON.stringify(data.erros)));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro de conexão com o servidor.");
+    }
+  };
 
   return (
     <div className="mt-6">
@@ -138,7 +173,10 @@ const FormField = ({ currentStep }: FormFieldProps) => {
 
           {/* Select só aparece se SIM */}
           {contato === "sim" && (
-            <select className="w-full border border-gray-300 rounded-md p-3 text-gray-700 mb-6 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <select className="w-full border border-gray-300 rounded-md p-3 text-gray-700 mb-6 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            value={tipoContato}
+            onChange={(e) => setTipoContato(e.target.value)}
+            >
               <option value="">Tipo de contato</option>
               <option value="telefone">Telefone</option>
               <option value="email">E-mail</option>
@@ -148,7 +186,10 @@ const FormField = ({ currentStep }: FormFieldProps) => {
 
           {/* Botão */}
           <div className="flex justify-end">
-            <button className="bg-[#1169B0] hover:bg-[#1169B0] text-white font-medium px-6 py-2 rounded-md flex items-center gap-2">
+            <button className="bg-[#1169B0] hover:bg-[#1169B0] text-white font-medium px-6 py-2 rounded-md flex items-center gap-2"
+              type="button"
+              onClick={() => setCurrentStep(1)}
+            >
                 Avançar
                 <img src={ArrowRight} alt="Seta" className="w-4 h-4" />
             </button>
@@ -367,11 +408,14 @@ const FormField = ({ currentStep }: FormFieldProps) => {
           </div>
            {/*Input para veiculo(s)} */}
             <div className="relative">
-                <select className="w-full border border-gray-300 rounded-md p-3 pr-10 text-gray-700 mb-6 focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none">
-                    <option value="">Veiculo(s)</option>
-                    <option value="telefone">Veiculo 1</option>
-                    <option value="email">Veiculo 2</option>
-                    <option value="whatsapp">Veiculo 3</option>
+                <select className="w-full border border-gray-300 rounded-md p-3 pr-10 text-gray-700 mb-6 focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
+                value={veiculo}
+                onChange={(e) => setVeiculo(e.target.value)}
+                >
+                    <option value="veiculo 0">Veiculo(s)</option>
+                    <option value="veiculo 1">Veiculo 1</option>
+                    <option value="veiculo 2">Veiculo 2</option>
+                    <option value="veiculo 3">Veiculo 3</option>
                 </select>
                 <svg className="w-5 h-5 absolute right-4 top-1/3 -translate-y-2/4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -380,13 +424,19 @@ const FormField = ({ currentStep }: FormFieldProps) => {
             {/* Botões */}
             <div className="flex justify-between">
             {/* Voltar */}
-            <button className="backButton text-white border border-[#1169B0] text-[#1169B0] font-medium px-6 py-2 rounded-md flex items-center gap-2 ">
+            <button className="backButton text-white border border-[#1169B0] text-[#1169B0] font-medium px-6 py-2 rounded-md flex items-center gap-2 "
+              type="button"
+              onClick={() => setCurrentStep(0)}
+            >
                 <img src={ArrowLeft}  alt="Seta" className="w-4 h-4" />
                 Voltar
             </button>
 
             {/* Avançar */}
-            <button className="bg-[#1169B0] hover:bg-[#1169B0] text-white font-medium px-6 py-2 rounded-md flex items-center gap-2 ">
+            <button className="bg-[#1169B0] hover:bg-[#1169B0] text-white font-medium px-6 py-2 rounded-md flex items-center gap-2 "
+            type="button"
+            onClick={() => setCurrentStep(2)}
+            >
                 Avançar
                 <img src={ArrowRight} alt="Seta" className="w-4 h-4" />
             </button>
@@ -487,17 +537,27 @@ const FormField = ({ currentStep }: FormFieldProps) => {
     <div>
       <textarea
         placeholder="Informe mais detalhes sobre o ticket"
+        value={descricao}
+        onChange={(e) => setDescricao(e.target.value)}
         className="w-full text-black border-2 border-gray-200 rounded-md px-3 py-2 text-sm resize-none h-24 focus:outline-none focus:ring-1 focus:ring-[#1169B0]"
+
       />
     </div>
 
     {/* Botões */}
     <div className="flex justify-between">
-        <button className="backButton text-white border border-[#1169B0] text-[#1169B0] font-medium px-6 py-2 rounded-md flex items-center gap-2 ">
+        <button className="backButton text-white border border-[#1169B0] text-[#1169B0] font-medium px-6 py-2 rounded-md flex items-center gap-2 "
+        type="button"
+        onClick={() => setCurrentStep(1)}
+        
+        >
             <img src={ArrowLeft}  alt="Seta" className="w-4 h-4" />
             Voltar
         </button>
-      <button className="bg-[#1169B0] hover:bg-[#0f5a95] text-white px-6 py-2 rounded-md text-sm flex items-center gap-2">
+      <button className="bg-[#1169B0] hover:bg-[#0f5a95] text-white px-6 py-2 rounded-md text-sm flex items-center gap-2"
+      type="button"
+      onClick={handleSubmit}
+      >
         Cadastrar   <span className="ml-1">✔</span>
       </button>
     </div>

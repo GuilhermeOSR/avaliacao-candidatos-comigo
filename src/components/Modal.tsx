@@ -8,7 +8,7 @@ type ModalProps = {
 };
 
 const Modal = ({onClose}: ModalProps) => {
-    const [currentStep, setCurrentStep] = useState(2);
+    const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
 
 
