@@ -50,12 +50,7 @@ const Modal = ({onClose}: ModalProps) => {
         <Stepper steps={["CONTATO", "TICKET", "MOTIVO", ]} currentStep={currentStep} />
         {/* Formulário dinâmico */}
         <FormField currentStep={currentStep} setCurrentStep={setCurrentStep} />
-        <div className="flex justify-end gap-2 mt-4">
 
-          <button className="px-4 py-2 rounded-md bg-[#1169B0] text-white">
-            Cadastrar
-          </button>
-        </div>
         
         </div>
 
