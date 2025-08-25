@@ -1,73 +1,111 @@
-<<<<<<< HEAD
-# React + TypeScript + Vite
+🚀 Sistema de Atendimento ao Cliente
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este é um projeto de teste desenvolvido em Node.js (Express + Prisma + TypeScript) no backend e React + TypeScript no frontend.
+O sistema permite login com autenticação JWT, gerenciamento de tickets e gestão de usuários com diferentes níveis de acesso (Admin e Atendente).
 
-Currently, two official plugins are available:
+🛠️ Tecnologias Utilizadas
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Backend: Node.js, Express, Prisma, JWT, Swagger
 
-## Expanding the ESLint configuration
+Banco de Dados: PostgreSQL (local)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Frontend: React + Vite + TailwindCSS
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+⚙️ Preparando o Ambiente
+🔹 Pré-requisitos
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+Node.js v18+
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+PostgreSQL instalado localmente
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+npm (gerenciador de pacotes)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+▶️ Como Rodar o Projeto
+1. Clonar o repositório
+git clone https://github.com/GuilhermeOSR/avaliacao-candidatos-comigo.git
+cd seu-repo
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-=======
-# avaliacao-candidatos-comigo
->>>>>>> 970c9d1547d91801e568193b088f601d7a95e1c3
+2. Configurar variáveis de ambiente
+
+Crie um arquivo .env dentro da pasta backend/ com o seguinte conteúdo:
+
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/meubanco"
+JWT_SECRET="segredo_super_secreto"
+
+
+⚠️ Ajuste o usuário, senha e nome do banco conforme sua instalação local do PostgreSQL.
+
+3. Configurar o banco
+
+No diretório backend:
+
+npm install
+npx prisma migrate dev
+
+4. Rodar o backend
+
+Ainda no diretório backend:
+
+npm run dev
+
+
+A API ficará disponível em:
+👉 http://localhost:3333/api
+Swagger docs:
+👉 http://localhost:3333/api-docs
+
+5. Rodar o frontend
+
+Na raiz do projeto (pasta frontend ou a raiz que contém o React):
+
+npm install
+npm run dev
+
+
+Frontend disponível em:
+👉 http://localhost:5173
+
+🔑 Autenticação
+
+A autenticação é feita via JWT.
+
+O token é armazenado no LocalStorage para simplificar este teste (não foi implementado refresh token ou persistência no banco).
+
+Usuários Admin podem:
+
+Criar, editar, excluir tickets
+
+Gerenciar usuários
+
+Usuários Atendentes podem:
+
+Criar e editar tickets
+
+Não podem excluir tickets ou acessar gestão de usuários
+
+📖 Swagger
+
+A documentação da API pode ser acessada em:
+👉 http://localhost:3333/api-docs
+
+⚠️ Observações Importantes
+
+O foco aqui foi funcionalidade rápida.
+
+Não foi implementada camada de testes automatizados.
+
+Infraestrutura foi mantida simples (sem Docker, CI/CD, etc.).
+
+LocalStorage foi usado para salvar o token apenas para praticidade, não sendo o mais seguro em produção.
+
+✅ Próximos Passos (se fosse evoluir)
+
+Implementar testes unitários e de integração
+
+Melhorar segurança do token (refresh, blacklist, etc.)
+
+Configurar Docker e pipelines de CI/CD
+
+Adicionar frontend no mesmo fluxo de deploy
+
+👉 Pronto, assim qualquer pessoa pode rodar sua aplicação localmente com Node e Postgres.
