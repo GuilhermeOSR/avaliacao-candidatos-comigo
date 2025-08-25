@@ -106,6 +106,4 @@ Melhorar segurança do token (refresh, blacklist, etc.)
 
 Configurar Docker e pipelines de CI/CD
 
-Adicionar frontend no mesmo fluxo de deploy
-
 👉 Pronto, assim qualquer pessoa pode rodar sua aplicação localmente com Node e Postgres.
